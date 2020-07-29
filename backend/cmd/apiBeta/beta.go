@@ -36,7 +36,7 @@ func attendRouters(parent *api.Router) {
 	}
 
 	router := parent.Group("/attend-temp")
-	router.GET("/", handler.AddAttendTemp)
+	router.POST("/", handler.AddAttendTemp)
 	//router.GET("/:batchID", handler.GetAttendTemp)
 	//router.DELETE("/:batchID", handler.DeleteAttendTemp)
 }

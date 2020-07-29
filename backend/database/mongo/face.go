@@ -61,7 +61,7 @@ func (repo *FaceMongoRepository) ReadByMultiFaceID(faceIDs []int32) ([]model.Fac
 	var result []model.Face
 	err := collection.Find(bson.M{
 		"faceID": bson.M{"$in": faceIDs},
-	}).One(&result)
+	}).All(&result)
 	return result, repo.provider.NewError(err)
 }
 

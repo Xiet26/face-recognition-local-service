@@ -42,7 +42,7 @@ func (h *AddAttendTempHandler) Handle(data *AddAttendTemp) error {
 
 	t := time.Now()
 
-	imagePaths, err := data.Camera.GetFrames(h.RootFolder, t, 5)
+	imagePaths, err := data.Camera.GetFrames(h.RootFolder, t, 1)
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,8 @@ func (h *AddAttendTempHandler) PredictImage(rec *face.Recognizer, imagePath stri
 		return nil, nil, fmt.Errorf("can't reconize image")
 	}
 
-	folderPath := fmt.Sprintf(utilities.ImageBatchFolderPath, h.RootFolder, batchID, time.Now().Format(utilities.BIRTH_FORMAT))
+	t := time.Now().Format(utilities.BIRTH_FORMAT_ATTEND)
+	folderPath := fmt.Sprintf(utilities.ImageBatchFolderPath, h.RootFolder, batchID, t)
 	err = os.MkdirAll(folderPath, os.ModePerm)
 	if err != nil {
 		return nil, nil, err
@@ -118,7 +119,7 @@ func (h *AddAttendTempHandler) PredictImage(rec *face.Recognizer, imagePath stri
 			continue
 		}
 
-		imageFace := fmt.Sprintf(utilities.ImageBatchPath, folderPath, batchID, time.Now().Unix())
+		imageFace := fmt.Sprintf(utilities.ImageBatchPath, folderPath, batchID, id, time.Now().Unix())
 		cropFaceFromImage(imagePath, imageFace, f.Rectangle)
 
 		facePaths = append(facePaths, imageFace)
@@ -152,26 +153,26 @@ func isExistedStudent(id int, studentAttends []model.StudentAttend) bool {
 func cropFaceFromImage(src string, dst string, rectangle image.Rectangle) {
 	mat := gocv.IMRead(src, gocv.IMReadUnchanged)
 
-	rectangle.Min.X -= 150
-	rectangle.Min.Y -= 150
-	rectangle.Max.X += 100
-	rectangle.Max.Y += 100
-
-	if rectangle.Min.X < 0 {
-		rectangle.Min.X = 0
-	}
-
-	if rectangle.Min.Y < 0 {
-		rectangle.Min.Y = 0
-	}
-
-	if rectangle.Max.X > mat.Cols() {
-		rectangle.Max.X = mat.Cols()
-	}
-
-	if rectangle.Max.Y > mat.Rows() {
-		rectangle.Max.Y = mat.Rows()
-	}
+	//rectangle.Min.X -= 10
+	//rectangle.Min.Y -= 10
+	//rectangle.Max.X += 10
+	//rectangle.Max.Y += 10
+	//
+	//if rectangle.Min.X < 0 {
+	//	rectangle.Min.X = 0
+	//}
+	//
+	//if rectangle.Min.Y < 0 {
+	//	rectangle.Min.Y = 0
+	//}
+	//
+	//if rectangle.Max.X > mat.Cols() {
+	//	rectangle.Max.X = mat.Cols()
+	//}
+	//
+	//if rectangle.Max.Y > mat.Rows() {
+	//	rectangle.Max.Y = mat.Rows()
+	//}
 
 	mat = mat.Region(rectangle)
 	gocv.IMWrite(dst, mat)
