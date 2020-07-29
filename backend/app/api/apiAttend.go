@@ -1,17 +1,15 @@
 package api
 
 import (
-	"github.com/Kagami/go-face"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
-	"xiet26/goface/face-management/database"
-	"xiet26/goface/face-management/service"
+	"xiet26/face-recognition-local-service/backend/database"
+	"xiet26/face-recognition-local-service/backend/service"
 )
 
 type AttendTempHandler struct {
-	AttendTempRepository database.AttendTempMongoRepository
-	Recognizer           *face.Recognizer
-	RootFolder           string
+	FaceRepository database.FaceMongoRepository
+	RootFolder     string
 }
 
 func (h *AttendTempHandler) AddAttendTemp(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -22,9 +20,8 @@ func (h *AttendTempHandler) AddAttendTemp(w http.ResponseWriter, r *http.Request
 	}
 
 	handler := &service.AddAttendTempHandler{
-		AttendTempRepository: h.AttendTempRepository,
-		Recognizer:           h.Recognizer,
-		RootFolder:           h.RootFolder,
+		FaceRepository: h.FaceRepository,
+		RootFolder:     h.RootFolder,
 	}
 
 	if err := handler.Handle(cmd); err != nil {
@@ -35,40 +32,40 @@ func (h *AttendTempHandler) AddAttendTemp(w http.ResponseWriter, r *http.Request
 	WriteJSON(w, http.StatusOK, ResponseBody{Message: "Attended"})
 }
 
-func (h *AttendTempHandler) GetAttendTemp(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	batchID := p.ByName("batchID")
-
-	cmd := new(service.GetAttendTemp)
-	cmd.BatchID = batchID
-
-	handler := &service.GetAttendTempHandler{
-		AttendTempRepository: h.AttendTempRepository,
-	}
-
-	result, err := handler.Handle(cmd)
-	if err != nil {
-		ResponseError(w, r, err)
-		return
-	}
-
-	WriteJSON(w, http.StatusOK, ResponseBody{Data: result})
-}
-
-func (h *AttendTempHandler) DeleteAttendTemp(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	batchID := p.ByName("batchID")
-
-	cmd := new(service.DeleteAttendTemp)
-	cmd.BatchID = batchID
-
-	handler := &service.DeleteAttendTempHandler{
-		AttendTempRepository: h.AttendTempRepository,
-	}
-
-	err := handler.Handle(cmd)
-	if err != nil {
-		ResponseError(w, r, err)
-		return
-	}
-
-	WriteJSON(w, http.StatusOK, ResponseBody{Message: "Successful"})
-}
+//func (h *AttendTempHandler) GetAttendTemp(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+//	batchID := p.ByName("batchID")
+//
+//	cmd := new(service.GetAttendTemp)
+//	cmd.BatchID = batchID
+//
+//	handler := &service.GetAttendTempHandler{
+//		AttendTempRepository: h.AttendTempRepository,
+//	}
+//
+//	result, err := handler.Handle(cmd)
+//	if err != nil {
+//		ResponseError(w, r, err)
+//		return
+//	}
+//
+//	WriteJSON(w, http.StatusOK, ResponseBody{Data: result})
+//}
+//
+//func (h *AttendTempHandler) DeleteAttendTemp(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+//	batchID := p.ByName("batchID")
+//
+//	cmd := new(service.DeleteAttendTemp)
+//	cmd.BatchID = batchID
+//
+//	handler := &service.DeleteAttendTempHandler{
+//		AttendTempRepository: h.AttendTempRepository,
+//	}
+//
+//	err := handler.Handle(cmd)
+//	if err != nil {
+//		ResponseError(w, r, err)
+//		return
+//	}
+//
+//	WriteJSON(w, http.StatusOK, ResponseBody{Message: "Successful"})
+//}

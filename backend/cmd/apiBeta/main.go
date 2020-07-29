@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"git.cyradar.com/utilities/data/timer"
-	"github.com/Kagami/go-face"
 	"log"
 	"net/http"
 	"os"
@@ -42,12 +41,6 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	container.Recognizer, err = face.NewRecognizer(modelGoFace)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	container.GetDataFaceStudent(container.Config.LicenceID)
 	//err = container.GetDataFaceStudent(container.Config.LicenceID)
 	//if err != nil {
 	//	log.Fatalln(err)
@@ -64,6 +57,6 @@ func init() {
 
 	flag.StringVar(&configPrefix, "configPrefix", "studymanagementsystem", "configs prefix")
 	flag.StringVar(&configSource, "configSource", "../configs", "configs source")
-	flag.StringVar(&modelGoFace, "modelGoFace", "../models-go-face", "model for go-face")
+	flag.StringVar(&modelGoFace, "modelGoFace", "../models", "model for go-face")
 
 }

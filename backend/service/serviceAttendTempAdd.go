@@ -8,17 +8,17 @@ import (
 	"image"
 	"os"
 	"time"
-	"xiet26/goface/face-management/database"
-	"xiet26/goface/face-management/model"
+	"xiet26/face-recognition-local-service/backend/database"
+	"xiet26/face-recognition-local-service/backend/model"
+	"xiet26/face-recognition-local-service/utilities"
 )
 
 const tolerance = 0.2
 
 type AddAttendTemp struct {
-	BatchID    string    `json:"batchID"`
-	Time       time.Time `json:"time"`
-	CameraHost string    `json:"cameraHost"`
-	CameraPort string    `json:"cameraPort"`
+	BatchID string       `json:"batchID"`
+	Camera  model.Camera `json:"camera"`
+	FaceIDs []int32      `json:"faceIds"`
 }
 
 func (c *AddAttendTemp) Valid() error {
@@ -31,8 +31,7 @@ func (c *AddAttendTemp) Valid() error {
 }
 
 type AddAttendTempHandler struct {
-	AttendTempRepository database.AttendTempMongoRepository
-	Recognizer           *face.Recognizer
+	FaceRepository       database.FaceMongoRepository
 	RootFolder           string
 }
 
@@ -41,19 +40,38 @@ func (h *AddAttendTempHandler) Handle(data *AddAttendTemp) error {
 		return err
 	}
 
-	cam := model.Camera{
-		Host: data.CameraHost,
-		Port: data.CameraPort,
-	}
+	t := time.Now()
 
-	imagePaths, err := cam.GetFrames(h.RootFolder, data.Time, 5)
+	imagePaths, err := data.Camera.GetFrames(h.RootFolder, t, 5)
 	if err != nil {
 		return err
 	}
 
+	rec, err := face.NewRecognizer(utilities.ModelPath)
+	if err != nil {
+		return err
+	}
+
+	faceData, err := h.FaceRepository.ReadByMultiFaceID(data.FaceIDs)
+	if err != nil {
+		return err
+	}
+
+	var (
+		vectors []face.Descriptor
+		ids []int32
+	)
+
+	for _, v := range faceData {
+		vectors = append(vectors, v.Vector)
+		ids = append(ids, v.FaceID)
+	}
+
+	rec.SetSamples(vectors, ids)
+
 	var studentAttendsTmp []model.StudentAttend
 	for _, imgPath := range imagePaths {
-		facesPath, facesID, e := h.PredictImage(imgPath, data.BatchID)
+		facesPath, facesID, e := h.PredictImage(rec, imgPath, data.BatchID)
 		if e != nil {
 			continue
 		}
@@ -75,31 +93,32 @@ func (h *AddAttendTempHandler) Handle(data *AddAttendTemp) error {
 		studentAttends = append(studentAttends, v)
 	}
 
-	return h.AttendTempRepository.Create(model.AttendTemp{
-		BatchID:        data.BatchID,
-		Time:           data.Time,
-		StudentAttends: studentAttends,
-	})
+	return nil
 }
 
-func (h *AddAttendTempHandler) PredictImage(imagePath string, batchID string) ([]string, []int, error) {
-	faces, err := h.Recognizer.RecognizeFile(imagePath)
+func (h *AddAttendTempHandler) PredictImage(rec *face.Recognizer, imagePath string, batchID string) ([]string, []int, error) {
+
+	faces, err := rec.RecognizeFile(imagePath)
 	if err != nil || faces == nil {
 		return nil, nil, fmt.Errorf("can't reconize image")
 	}
 
-	os.MkdirAll(fmt.Sprintf("%s/%s", h.RootFolder, batchID), os.ModePerm)
+	folderPath := fmt.Sprintf(utilities.ImageBatchFolderPath, h.RootFolder, batchID, time.Now().Format(utilities.BIRTH_FORMAT))
+	err = os.MkdirAll(folderPath, os.ModePerm)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	facePaths := make([]string, 0)
 	facesID := make([]int, 0)
 
 	for _, f := range faces {
-		id, err := h.predict(f.Descriptor)
+		id, err := h.predict(rec, f.Descriptor)
 		if err != nil {
 			continue
 		}
 
-		imageFace := fmt.Sprintf("%s/%s/%v.png", h.RootFolder, batchID, time.Now().Unix())
+		imageFace := fmt.Sprintf(utilities.ImageBatchPath, folderPath, batchID, time.Now().Unix())
 		cropFaceFromImage(imagePath, imageFace, f.Rectangle)
 
 		facePaths = append(facePaths, imageFace)
@@ -112,8 +131,8 @@ func (h *AddAttendTempHandler) PredictImage(imagePath string, batchID string) ([
 	return facePaths, facesID, nil
 }
 
-func (h *AddAttendTempHandler) predict(vector [128]float32) (int, error) {
-	id := h.Recognizer.ClassifyThreshold(vector, tolerance)
+func (h *AddAttendTempHandler) predict(rec *face.Recognizer, vector [128]float32) (int, error) {
+	id := rec.ClassifyThreshold(vector, tolerance)
 	if id < 0 {
 		return -1, fmt.Errorf("cant classify")
 	}

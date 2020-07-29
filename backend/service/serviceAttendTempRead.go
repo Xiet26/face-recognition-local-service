@@ -3,8 +3,8 @@ package service
 import (
 	"fmt"
 	"github.com/asaskevich/govalidator"
-	"xiet26/goface/face-management/database"
-	"xiet26/goface/face-management/model"
+	"xiet26/face-recognition-local-service/backend/database"
+	"xiet26/face-recognition-local-service/backend/model"
 )
 
 type GetAttendTemp struct {

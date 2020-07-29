@@ -4,7 +4,7 @@ import (
 	"git.cyradar.com/utilities/data/providers/mongo"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"xiet26/goface/face-management/model"
+	"xiet26/face-recognition-local-service/backend/model"
 )
 
 var AttendTempMongoCollection = "attendTemps"
