@@ -18,7 +18,7 @@ const tolerance = 0.2
 type AddAttendTemp struct {
 	BatchID string       `json:"batchID"`
 	Camera  model.Camera `json:"camera"`
-	FaceIDs []int32      `json:"faceIds"`
+	FaceIDs []int32      `json:"faceIDs"`
 }
 
 func (c *AddAttendTemp) Valid() error {
@@ -31,18 +31,24 @@ func (c *AddAttendTemp) Valid() error {
 }
 
 type AddAttendTempHandler struct {
-	FaceRepository       database.FaceMongoRepository
-	RootFolder           string
+	FaceRepository database.FaceMongoRepository
+	RootFolder     string
 }
 
 func (h *AddAttendTempHandler) Handle(data *AddAttendTemp) error {
 	if err := data.Valid(); err != nil {
 		return err
 	}
+	fmt.Println(data)
+	t := time.Now().Format(utilities.BIRTH_FORMAT_ATTEND)
+	folderPath := fmt.Sprintf(utilities.ImageBatchFolderPath, h.RootFolder, data.BatchID, t)
 
-	t := time.Now()
+	err := os.MkdirAll(fmt.Sprintf(`%s/all`, folderPath), os.ModePerm)
+	if err != nil {
+		return err
+	}
 
-	imagePaths, err := data.Camera.GetFrames(h.RootFolder, t, 1)
+	imagePaths, err := data.Camera.GetFrames(fmt.Sprintf(`%s/all`, folderPath), time.Now(), 1)
 	if err != nil {
 		return err
 	}
@@ -59,7 +65,7 @@ func (h *AddAttendTempHandler) Handle(data *AddAttendTemp) error {
 
 	var (
 		vectors []face.Descriptor
-		ids []int32
+		ids     []int32
 	)
 
 	for _, v := range faceData {
@@ -71,8 +77,9 @@ func (h *AddAttendTempHandler) Handle(data *AddAttendTemp) error {
 
 	var studentAttendsTmp []model.StudentAttend
 	for _, imgPath := range imagePaths {
-		facesPath, facesID, e := h.PredictImage(rec, imgPath, data.BatchID)
+		facesPath, facesID, e := h.PredictImage(rec, imgPath, data.BatchID, folderPath)
 		if e != nil {
+			fmt.Println(e)
 			continue
 		}
 
@@ -96,15 +103,14 @@ func (h *AddAttendTempHandler) Handle(data *AddAttendTemp) error {
 	return nil
 }
 
-func (h *AddAttendTempHandler) PredictImage(rec *face.Recognizer, imagePath string, batchID string) ([]string, []int, error) {
+func (h *AddAttendTempHandler) PredictImage(rec *face.Recognizer, imagePath string, batchID string, path string) ([]string, []int, error) {
 
 	faces, err := rec.RecognizeFile(imagePath)
 	if err != nil || faces == nil {
 		return nil, nil, fmt.Errorf("can't reconize image")
 	}
 
-	t := time.Now().Format(utilities.BIRTH_FORMAT_ATTEND)
-	folderPath := fmt.Sprintf(utilities.ImageBatchFolderPath, h.RootFolder, batchID, t)
+	folderPath := fmt.Sprintf(`%s/face`, path)
 	err = os.MkdirAll(folderPath, os.ModePerm)
 	if err != nil {
 		return nil, nil, err
@@ -127,7 +133,7 @@ func (h *AddAttendTempHandler) PredictImage(rec *face.Recognizer, imagePath stri
 	}
 
 	// remove image get from camera
-	os.RemoveAll(imagePath)
+	//os.RemoveAll(imagePath)
 
 	return facePaths, facesID, nil
 }

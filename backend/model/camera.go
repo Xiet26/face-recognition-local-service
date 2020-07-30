@@ -13,7 +13,7 @@ type Camera struct {
 	Password  string        `json:"password" bson:"password"`
 }
 
-func (c *Camera) GetFrames(rootFolder string, t time.Time, numOfFrame int) ([]string, error) {
+func (c *Camera) GetFrames(path string, t time.Time, numOfFrame int) ([]string, error) {
 	urlStreamVideo := fmt.Sprintf("http://%s:%s", c.Host, c.Port)
 	webcam, err := gocv.OpenVideoCapture(urlStreamVideo)
 	if err != nil {
@@ -36,7 +36,7 @@ func (c *Camera) GetFrames(rootFolder string, t time.Time, numOfFrame int) ([]st
 			continue
 		}
 
-		path := fmt.Sprintf(`%s/%v.jpg`, rootFolder, time.Now().Unix())
+		path := fmt.Sprintf(`%s/%v.jpg`, path, time.Now().Unix())
 		gocv.IMWrite(path, img)
 		imagePaths = append(imagePaths, path)
 		time.Sleep(time.Second*2)
