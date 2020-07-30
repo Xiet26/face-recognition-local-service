@@ -6,6 +6,7 @@ import (
 	"github.com/asaskevich/govalidator"
 	"gocv.io/x/gocv"
 	"image"
+	"image/color"
 	"os"
 	"time"
 	"xiet26/face-recognition-local-service/backend/database"
@@ -104,7 +105,6 @@ func (h *AddAttendTempHandler) Handle(data *AddAttendTemp) error {
 }
 
 func (h *AddAttendTempHandler) PredictImage(rec *face.Recognizer, imagePath string, batchID string, path string) ([]string, []int, error) {
-
 	faces, err := rec.RecognizeFile(imagePath)
 	if err != nil || faces == nil {
 		return nil, nil, fmt.Errorf("can't reconize image")
@@ -182,4 +182,13 @@ func cropFaceFromImage(src string, dst string, rectangle image.Rectangle) {
 
 	mat = mat.Region(rectangle)
 	gocv.IMWrite(dst, mat)
+}
+
+func drawLineInImage(src string, dst string, rectangle image.Rectangle) {
+	mat := gocv.IMRead(src, gocv.IMReadUnchanged)
+	cloneMat := mat.Clone()
+
+	gocv.Rectangle(&cloneMat, rectangle, color.RGBA{0,255,0,0}, 2) // color: green
+
+	gocv.IMWrite(dst, cloneMat)
 }
