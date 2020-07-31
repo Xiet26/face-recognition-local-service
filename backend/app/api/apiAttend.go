@@ -31,10 +31,12 @@ func (h *AttendTempHandler) AddAttendTemp(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
 	WriteJSON(w, http.StatusOK, ResponseBody{Message: "Attended"})
 }
 
-func (h *AttendTempHandler) GetAttendTemp(w http.ResponseWriter, r *http.Request, p httprouter.Params)  http.Handler{
+func (h *AttendTempHandler) GetAttendTemp(w http.ResponseWriter, r *http.Request, p httprouter.Params) http.Handler {
 	batchID := p.ByName("batchID")
 
 	year, _ := GetQuery(r, "year")
@@ -43,7 +45,7 @@ func (h *AttendTempHandler) GetAttendTemp(w http.ResponseWriter, r *http.Request
 
 	t := fmt.Sprintf("%s-%s-%s", day, month, year)
 
-	filePath := fmt.Sprintf(utilities.ImageBatchFolderPath, batchID, t)
+	filePath := fmt.Sprintf(utilities.ImageBatchFolderPath, h.RootFolder, batchID, t)
 
 	return http.FileServer(http.Dir(filePath))
 }

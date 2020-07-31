@@ -119,13 +119,24 @@ func (h *AddAttendTempHandler) PredictImage(rec *face.Recognizer, imagePath stri
 	facePaths := make([]string, 0)
 	facesID := make([]int, 0)
 
-	for _, f := range faces {
+	for i, f := range faces {
 		id, err := h.predict(rec, f.Descriptor)
+
 		if err != nil {
+
+			drawLineInImage(imagePath, imagePath, f.Rectangle)
+
+			imageFace := fmt.Sprintf(utilities.ImageBatchPath, folderPath, fmt.Sprintf("unknown%d", i), id, time.Now().Unix())
+
+			cropFaceFromImage(imagePath, imageFace, f.Rectangle)
+
 			continue
 		}
 
+		drawLineInImage(imagePath, imagePath, f.Rectangle)
+
 		imageFace := fmt.Sprintf(utilities.ImageBatchPath, folderPath, batchID, id, time.Now().Unix())
+
 		cropFaceFromImage(imagePath, imageFace, f.Rectangle)
 
 		facePaths = append(facePaths, imageFace)
@@ -188,7 +199,7 @@ func drawLineInImage(src string, dst string, rectangle image.Rectangle) {
 	mat := gocv.IMRead(src, gocv.IMReadUnchanged)
 	cloneMat := mat.Clone()
 
-	gocv.Rectangle(&cloneMat, rectangle, color.RGBA{0,255,0,0}, 2) // color: green
+	gocv.Rectangle(&cloneMat, rectangle, color.RGBA{G: 255}, 2) // color: green
 
 	gocv.IMWrite(dst, cloneMat)
 }

@@ -59,5 +59,7 @@ func (h *FaceHandler) AddFace(w http.ResponseWriter, r *http.Request, p httprout
 		return
 	}
 
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
 	WriteJSON(w, http.StatusOK, ResponseBody{Message: "Attended"})
 }
