@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"github.com/Kagami/go-face"
 	"github.com/julienschmidt/httprouter"
 	"io/ioutil"
@@ -18,6 +19,7 @@ type FaceHandler struct {
 }
 
 func (h *FaceHandler) AddFace(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	fmt.Println("ASDASDASDASD")
 	cmd := new(service.AddFace)
 
 	err := r.ParseMultipartForm(32 << 20)
@@ -59,7 +61,10 @@ func (h *FaceHandler) AddFace(w http.ResponseWriter, r *http.Request, p httprout
 		return
 	}
 
-	w.Header().Set("Access-Control-Allow-Origin", "*")
+	WriteJSON(w, http.StatusOK, ResponseBody{Message: "Attended"})
+}
 
+func (h *FaceHandler) Get(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	fmt.Println("ASDASDASDASD")
 	WriteJSON(w, http.StatusOK, ResponseBody{Message: "Attended"})
 }

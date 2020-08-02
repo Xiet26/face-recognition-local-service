@@ -7,11 +7,12 @@ const (
 	BIRTH_FORMAT_ATTEND    = "02-01-2006"
 	RangeAbsent            = 20
 	ImagePersonFolderPath  = `%s/data/images/person/%v`
-	ImageBatchFolderPath   = `%s/data/images/batch/%s/%s`
+	ImageBatchFolderPath   = `%s/data/images/batch/%s/%d/%s`
 	ImageLicenceFolderPath = `%s/data/images`
 	DataLicenceFolderPath  = `%s/data/`
 	ImageFacePath          = `%s/%v_face.jpg`
 	ImageBatchPath         = `%s/%v_face_%v_%v.jpg`
+	ImageBatchAllPath      = `%s/%v.jpg`
 	ModelPath              = "../models"
 	PersonLabelFace        = `%s_%s`
 	FileFieldXLSX          = "fileUpload"

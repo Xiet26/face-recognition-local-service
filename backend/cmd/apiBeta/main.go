@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"git.cyradar.com/utilities/data/timer"
+	"github.com/gorilla/handlers"
 	"log"
 	"net/http"
 	"os"
@@ -48,8 +49,11 @@ func main() {
 
 	os.MkdirAll(container.Config.RootFolder, os.ModePerm)
 
+	headers := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"})
+	methods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"})
+	origins := handlers.AllowedOrigins([]string{"*"})
 	container.Logger().Infof("Listen and serve Licence API at %s\n", container.Config.Binding)
-	container.Logger().Fatalln(http.ListenAndServe(container.Config.Binding, NewAPIBeta(container)))
+	container.Logger().Fatalln(http.ListenAndServe(container.Config.Binding, handlers.CORS(headers, methods, origins)(NewAPIBeta(container))))
 }
 
 func init() {

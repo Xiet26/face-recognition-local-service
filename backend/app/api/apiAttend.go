@@ -26,14 +26,19 @@ func (h *AttendTempHandler) AddAttendTemp(w http.ResponseWriter, r *http.Request
 		RootFolder:     h.RootFolder,
 	}
 
-	if err := handler.Handle(cmd); err != nil {
+	result, err, message := handler.Handle(cmd)
+	if err != nil {
 		ResponseError(w, r, err)
 		return
 	}
 
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	WriteJSON(w, http.StatusOK, ResponseBody{Message: "Attended"})
+	WriteJSON(w, http.StatusOK, ResponseBody{
+		Message: message,
+		Code:    0,
+		Data:    result,
+	})
 }
 
 func (h *AttendTempHandler) GetAttendTemp(w http.ResponseWriter, r *http.Request, p httprouter.Params) http.Handler {

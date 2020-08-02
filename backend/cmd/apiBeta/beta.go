@@ -49,6 +49,7 @@ func faceRouters(parent *api.Router) {
 
 	router := parent.Group("/face")
 	router.POST("/", handler.AddFace)
+	router.GET("/", handler.Get)
 }
 
 func cameraRouters(parent *api.Router) {

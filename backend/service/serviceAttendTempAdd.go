@@ -18,6 +18,7 @@ const tolerance = 0.2
 
 type AddAttendTemp struct {
 	BatchID string       `json:"batchID"`
+	Group   int          `json:"group"`
 	Camera  model.Camera `json:"camera"`
 	FaceIDs []int32      `json:"faceIDs"`
 }
@@ -36,32 +37,37 @@ type AddAttendTempHandler struct {
 	RootFolder     string
 }
 
-func (h *AddAttendTempHandler) Handle(data *AddAttendTemp) error {
+func (h *AddAttendTempHandler) Handle(data *AddAttendTemp) (model.ResultAttend, error, string) {
+	errMsg := "Error in time: "
+	var result model.ResultAttend
 	if err := data.Valid(); err != nil {
-		return err
+		return result, err, errMsg
 	}
-	fmt.Println(data)
-	t := time.Now().Format(utilities.BIRTH_FORMAT_ATTEND)
-	folderPath := fmt.Sprintf(utilities.ImageBatchFolderPath, h.RootFolder, data.BatchID, t)
+
+	timeNow := time.Now()
+	fmt.Println(timeNow.Unix())
+
+	t := timeNow.Format(utilities.BIRTH_FORMAT_ATTEND)
+	folderPath := fmt.Sprintf(utilities.ImageBatchFolderPath, h.RootFolder, data.BatchID, data.Group, t)
 
 	err := os.MkdirAll(fmt.Sprintf(`%s/all`, folderPath), os.ModePerm)
 	if err != nil {
-		return err
+		return result, err, errMsg
 	}
 
-	imagePaths, err := data.Camera.GetFrames(fmt.Sprintf(`%s/all`, folderPath), time.Now(), 1)
+	imagePaths, err := data.Camera.GetFrames(folderPath, time.Now(), 1)
 	if err != nil {
-		return err
+		return result, err, errMsg
 	}
 
 	rec, err := face.NewRecognizer(utilities.ModelPath)
 	if err != nil {
-		return err
+		return result, err, errMsg
 	}
 
 	faceData, err := h.FaceRepository.ReadByMultiFaceID(data.FaceIDs)
 	if err != nil {
-		return err
+		return result, err, errMsg
 	}
 
 	var (
@@ -76,77 +82,85 @@ func (h *AddAttendTempHandler) Handle(data *AddAttendTemp) error {
 
 	rec.SetSamples(vectors, ids)
 
-	var studentAttendsTmp []model.StudentAttend
+	studentAttends := make(map[int]bool)
+
 	for _, imgPath := range imagePaths {
-		facesPath, facesID, e := h.PredictImage(rec, imgPath, data.BatchID, folderPath)
+		_, facesIDs, e := h.PredictImage(rec, imgPath, data.BatchID, folderPath, timeNow.Unix())
 		if e != nil {
-			fmt.Println(e)
+			errMsg = fmt.Sprintf("%v", timeNow)
 			continue
 		}
 
-		for i := 0; i < len(facesPath); i++ {
-			studentAttendsTmp = append(studentAttendsTmp, model.StudentAttend{
-				ImageFace: facesPath[i],
-				FaceID:    facesID[i],
-			})
+		for _, v := range facesIDs {
+			if studentAttends[v] {
+				continue
+			}
+			studentAttends[v] = true
 		}
 	}
 
-	var studentAttends []model.StudentAttend
-	for _, v := range studentAttendsTmp {
-		if isExistedStudent(v.FaceID, studentAttends) {
-			continue
+	var absent []int32
+	for _, v := range data.FaceIDs {
+		if !studentAttends[int(v)] {
+			absent = append(absent, v)
 		}
-
-		studentAttends = append(studentAttends, v)
 	}
 
-	return nil
+	result.Time = timeNow
+	result.BatchID = data.BatchID
+	result.Group = data.Group
+	result.AbsentFaceIDs = absent
+
+	return result, err, errMsg
 }
 
-func (h *AddAttendTempHandler) PredictImage(rec *face.Recognizer, imagePath string, batchID string, path string) ([]string, []int, error) {
+func (h *AddAttendTempHandler) PredictImage(rec *face.Recognizer, imagePath string, batchID string, path string, t int64) ([]string, []int, error) {
+	defer os.RemoveAll(imagePath)
+
 	faces, err := rec.RecognizeFile(imagePath)
 	if err != nil || faces == nil {
 		return nil, nil, fmt.Errorf("can't reconize image")
 	}
 
-	folderPath := fmt.Sprintf(`%s/face`, path)
-	err = os.MkdirAll(folderPath, os.ModePerm)
+	folderFacePath := fmt.Sprintf(`%s/face`, path)
+	err = os.MkdirAll(folderFacePath, os.ModePerm)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	facePaths := make([]string, 0)
-	facesID := make([]int, 0)
+	folderAllPath := fmt.Sprintf(`%s/all`, path)
+	err = os.MkdirAll(folderAllPath, os.ModePerm)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var facePaths []string
+	var faceIDs []int
 
 	for i, f := range faces {
 		id, err := h.predict(rec, f.Descriptor)
 
+		imageAll := fmt.Sprintf(utilities.ImageBatchAllPath, folderAllPath, t)
+
+		drawLineInImage(imagePath, imageAll, f.Rectangle)
+
 		if err != nil {
-
-			drawLineInImage(imagePath, imagePath, f.Rectangle)
-
-			imageFace := fmt.Sprintf(utilities.ImageBatchPath, folderPath, fmt.Sprintf("unknown%d", i), id, time.Now().Unix())
+			imageFace := fmt.Sprintf(utilities.ImageBatchPath, folderFacePath, fmt.Sprintf("unknown%d", i), id, t)
 
 			cropFaceFromImage(imagePath, imageFace, f.Rectangle)
 
 			continue
 		}
 
-		drawLineInImage(imagePath, imagePath, f.Rectangle)
-
-		imageFace := fmt.Sprintf(utilities.ImageBatchPath, folderPath, batchID, id, time.Now().Unix())
+		imageFace := fmt.Sprintf(utilities.ImageBatchPath, folderFacePath, batchID, id, t)
 
 		cropFaceFromImage(imagePath, imageFace, f.Rectangle)
 
 		facePaths = append(facePaths, imageFace)
-		facesID = append(facesID, id)
+		faceIDs = append(faceIDs, id)
 	}
 
-	// remove image get from camera
-	//os.RemoveAll(imagePath)
-
-	return facePaths, facesID, nil
+	return facePaths, faceIDs, nil
 }
 
 func (h *AddAttendTempHandler) predict(rec *face.Recognizer, vector [128]float32) (int, error) {
@@ -202,4 +216,5 @@ func drawLineInImage(src string, dst string, rectangle image.Rectangle) {
 	gocv.Rectangle(&cloneMat, rectangle, color.RGBA{G: 255}, 2) // color: green
 
 	gocv.IMWrite(dst, cloneMat)
+
 }
