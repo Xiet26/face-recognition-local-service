@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"runtime"
 	"time"
-	"xiet26/Smart_Attendance_System/backend/utilities"
+	"xiet26/face-recognition-local-service/utilities"
 )
 
 var (
