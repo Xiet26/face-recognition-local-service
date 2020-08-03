@@ -22,7 +22,6 @@ func (c *AddFace) Valid() error {
 
 type AddFaceHandler struct {
 	FaceRepository database.FaceMongoRepository
-	Recognizer     *face.Recognizer
 	RootFolder     string
 }
 

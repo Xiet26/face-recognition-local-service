@@ -172,14 +172,6 @@ func (h *AddAttendTempHandler) predict(rec *face.Recognizer, vector [128]float32
 	return id, nil
 }
 
-func isExistedStudent(id int, studentAttends []model.StudentAttend) bool {
-	for _, v := range studentAttends {
-		if v.FaceID == id {
-			return true
-		}
-	}
-	return false
-}
 
 func cropFaceFromImage(src string, dst string, rectangle image.Rectangle) {
 	mat := gocv.IMRead(src, gocv.IMReadUnchanged)

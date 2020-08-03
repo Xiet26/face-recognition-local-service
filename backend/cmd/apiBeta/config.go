@@ -9,6 +9,7 @@ type Config struct {
 
 	// Binding
 	Binding string
+	BindingImageService string
 
 	// MongoDB
 	MongoServer     string

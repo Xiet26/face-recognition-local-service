@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"github.com/Kagami/go-face"
 	"github.com/julienschmidt/httprouter"
 	"io/ioutil"
 	"net/http"
@@ -14,12 +13,11 @@ import (
 
 type FaceHandler struct {
 	FaceRepository database.FaceMongoRepository
-	Recognizer     *face.Recognizer
+	ImagePort      string
 	RootFolder     string
 }
 
 func (h *FaceHandler) AddFace(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	fmt.Println("ASDASDASDASD")
 	cmd := new(service.AddFace)
 
 	err := r.ParseMultipartForm(32 << 20)
@@ -52,7 +50,6 @@ func (h *FaceHandler) AddFace(w http.ResponseWriter, r *http.Request, p httprout
 	cmd.FaceID = int32(id)
 	handler := &service.AddFaceHandler{
 		FaceRepository: h.FaceRepository,
-		Recognizer:     h.Recognizer,
 		RootFolder:     h.RootFolder,
 	}
 
@@ -65,6 +62,28 @@ func (h *FaceHandler) AddFace(w http.ResponseWriter, r *http.Request, p httprout
 }
 
 func (h *FaceHandler) Get(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	fmt.Println("ASDASDASDASD")
-	WriteJSON(w, http.StatusOK, ResponseBody{Message: "Attended"})
+	faceID := p.ByName("faceID")
+
+	hostPath := fmt.Sprintf(`:%s/person/%s`, h.ImagePort, faceID)
+	folderPath := fmt.Sprintf(utilities.ImagePersonFolderPath, h.RootFolder, faceID)
+
+	var filePaths []string
+
+	files, err := ioutil.ReadDir(folderPath)
+	if err != nil {
+		ResponseError(w, r, err)
+		return
+	}
+
+	for _, f := range files {
+		filePaths = append(filePaths, fmt.Sprintf(`%s/%s`, hostPath, f.Name()))
+	}
+
+	WriteJSON(w, http.StatusOK, ResponseBody{
+		Message: "get face images",
+		Code:    0,
+		Data:    filePaths,
+	})
+
+	return
 }

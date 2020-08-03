@@ -4,10 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"git.cyradar.com/utilities/data/timer"
-	"github.com/gorilla/handlers"
 	"log"
 	"net/http"
-	"os"
 	"runtime"
 	"time"
 	"xiet26/Smart_Attendance_System/backend/utilities"
@@ -42,19 +40,15 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	//err = container.GetDataFaceStudent(container.Config.LicenceID)
-	//if err != nil {
-	//	log.Fatalln(err)
-	//}
+	//headers := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"})
+	//methods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"})
+	//origins := handlers.AllowedOrigins([]string{"*"})
 
-	os.MkdirAll(container.Config.RootFolder, os.ModePerm)
+	fs := http.FileServer(http.Dir(fmt.Sprintf(`%s/data/images`, container.Config.RootFolder)))
+	http.Handle("/", fs)
 
-	headers := handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"})
-	methods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE"})
-	origins := handlers.AllowedOrigins([]string{"*"})
-
-	container.Logger().Infof("Listen and serve Licence API at %s\n", container.Config.Binding)
-	container.Logger().Fatalln(http.ListenAndServe(container.Config.Binding, handlers.CORS(headers, methods, origins)(NewAPIBeta(container))))
+	container.Logger().Infof("Listen and serve Licence API at %s\n", container.Config.BindingImageService)
+	container.Logger().Fatalln(http.ListenAndServe(fmt.Sprintf(`:%s`, container.Config.BindingImageService), nil))
 
 }
 

@@ -32,11 +32,15 @@ func NewAPIBeta(container *Container) http.Handler {
 func attendRouters(parent *api.Router) {
 	handler := api.AttendTempHandler{
 		FaceRepository: container.FaceRepository,
-		RootFolder:           container.Config.RootFolder,
+		RootFolder:     container.Config.RootFolder,
+		ImagePort:      container.Config.BindingImageService,
 	}
 
 	router := parent.Group("/attend-temp")
 	router.POST("/", handler.AddAttendTemp)
+	router.GET("/:batchID/batch", handler.GetAttendTempBatchImages)
+	router.GET("/:batchID/face", handler.GetAttendTempFaceImages)
+
 	//router.GET("/:batchID", handler.GetAttendTemp)
 	//router.DELETE("/:batchID", handler.DeleteAttendTemp)
 }
@@ -45,11 +49,12 @@ func faceRouters(parent *api.Router) {
 	handler := api.FaceHandler{
 		FaceRepository: container.FaceRepository,
 		RootFolder:     container.Config.RootFolder,
+		ImagePort:      container.Config.BindingImageService,
 	}
 
 	router := parent.Group("/face")
 	router.POST("/", handler.AddFace)
-	router.GET("/", handler.Get)
+	router.GET("/:faceID", handler.Get)
 }
 
 func cameraRouters(parent *api.Router) {
