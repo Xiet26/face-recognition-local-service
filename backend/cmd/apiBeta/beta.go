@@ -40,6 +40,8 @@ func attendRouters(parent *api.Router) {
 	router.POST("/", handler.AddAttendTemp)
 	router.GET("/:batchID/batch", handler.GetAttendTempBatchImages)
 	router.GET("/:batchID/face", handler.GetAttendTempFaceImages)
+	router.GET("/:batchID/unknown", handler.GetAttendTempFaceImagesUnknown)
+
 
 	//router.GET("/:batchID", handler.GetAttendTemp)
 	//router.DELETE("/:batchID", handler.DeleteAttendTemp)
