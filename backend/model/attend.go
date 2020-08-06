@@ -21,3 +21,10 @@ type ResultAttend struct {
 	Group         int       `json:"group"`
 	AbsentFaceIDs []int32   `json:"absentFaceIDs"`
 }
+
+type ResultAndroidAttend struct {
+	BatchID       string  `json:"batchID"`
+	Time          string  `json:"time"`
+	Group         int     `json:"group"`
+	AbsentFaceIDs []int32 `json:"absentFaceIDs"`
+}

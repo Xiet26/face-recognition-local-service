@@ -114,6 +114,83 @@ func (h *AddAttendTempHandler) Handle(data *AddAttendTemp) (model.ResultAttend, 
 	return result, err, errMsg
 }
 
+func (h *AddAttendTempHandler) AndroidHandle(data *AddAttendTemp) (model.ResultAndroidAttend, error, string) {
+	errMsg := "Error in time: "
+	var result model.ResultAndroidAttend
+	if err := data.Valid(); err != nil {
+		return result, err, errMsg
+	}
+
+	timeNow := time.Now()
+	fmt.Println(timeNow.Unix())
+
+	t := timeNow.Format(utilities.BIRTH_FORMAT_ATTEND)
+	folderPath := fmt.Sprintf(utilities.ImageBatchFolderPath, h.RootFolder, data.BatchID, data.Group, t)
+
+	err := os.MkdirAll(fmt.Sprintf(`%s/all`, folderPath), os.ModePerm)
+	if err != nil {
+		return result, err, errMsg
+	}
+
+	imagePaths, err := data.Camera.GetFrames(folderPath, time.Now(), 1)
+	if err != nil {
+		return result, err, errMsg
+	}
+
+	rec, err := face.NewRecognizer(utilities.ModelPath)
+	if err != nil {
+		return result, err, errMsg
+	}
+
+	faceData, err := h.FaceRepository.ReadByMultiFaceID(data.FaceIDs)
+	if err != nil {
+		return result, err, errMsg
+	}
+
+	var (
+		vectors []face.Descriptor
+		ids     []int32
+	)
+
+	for _, v := range faceData {
+		vectors = append(vectors, v.Vector)
+		ids = append(ids, v.FaceID)
+	}
+
+	rec.SetSamples(vectors, ids)
+
+	studentAttends := make(map[int]bool)
+
+	for _, imgPath := range imagePaths {
+		_, facesIDs, e := h.PredictImage(rec, imgPath, data.BatchID, folderPath, timeNow.Unix())
+		if e != nil {
+			errMsg = fmt.Sprintf("%v", timeNow)
+			continue
+		}
+
+		for _, v := range facesIDs {
+			if studentAttends[v] {
+				continue
+			}
+			studentAttends[v] = true
+		}
+	}
+
+	var absent []int32
+	for _, v := range data.FaceIDs {
+		if !studentAttends[int(v)] {
+			absent = append(absent, v)
+		}
+	}
+
+	result.Time = timeNow.Format("02-01-2006 15:04:05")
+	result.BatchID = data.BatchID
+	result.Group = data.Group
+	result.AbsentFaceIDs = absent
+
+	return result, err, errMsg
+}
+
 func (h *AddAttendTempHandler) PredictImage(rec *face.Recognizer, imagePath string, batchID string, path string, t int64) ([]string, []int, error) {
 	defer os.RemoveAll(imagePath)
 

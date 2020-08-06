@@ -26,6 +26,8 @@ func NewAPIBeta(container *Container) http.Handler {
 	faceRouters(beta)
 	cameraRouters(beta)
 
+	androidAttendRouters(beta)
+
 	return router
 }
 
@@ -40,8 +42,7 @@ func attendRouters(parent *api.Router) {
 	router.POST("/", handler.AddAttendTemp)
 	router.GET("/:batchID/batch", handler.GetAttendTempBatchImages)
 	router.GET("/:batchID/face", handler.GetAttendTempFaceImages)
-	router.GET("/:batchID/unknown", handler.GetAttendTempFaceUnknown)
-
+	router.GET("/:batchID/unknown", handler.GetAttendTempFaceImagesUnknown)
 
 	//router.GET("/:batchID", handler.GetAttendTemp)
 	//router.DELETE("/:batchID", handler.DeleteAttendTemp)
@@ -70,4 +71,15 @@ func cameraRouters(parent *api.Router) {
 	//router.POST("", handler.AddCamera)
 	////router.POST("/upload", handler.ImportXLSX)
 	//router.DELETE("/:id", handler.DeleteCamera)
+}
+
+func androidAttendRouters(parent *api.Router) {
+	handler := api.AttendTempHandler{
+		FaceRepository: container.FaceRepository,
+		RootFolder:     container.Config.RootFolder,
+		ImagePort:      container.Config.BindingImageService,
+	}
+
+	router := parent.Group("/android/attend-temp")
+	router.POST("/", handler.AddAndroidAttendTemp)
 }

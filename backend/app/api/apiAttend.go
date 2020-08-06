@@ -45,6 +45,33 @@ func (h *AttendTempHandler) AddAttendTemp(w http.ResponseWriter, r *http.Request
 	})
 }
 
+func (h *AttendTempHandler) AddAndroidAttendTemp(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	cmd := new(service.AddAttendTemp)
+	if err := BindJSON(r, cmd); err != nil {
+		ResponseError(w, r, err)
+		return
+	}
+
+	handler := &service.AddAttendTempHandler{
+		FaceRepository: h.FaceRepository,
+		RootFolder:     h.RootFolder,
+	}
+
+	result, err, message := handler.AndroidHandle(cmd)
+	if err != nil {
+		ResponseError(w, r, err)
+		return
+	}
+
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	WriteJSON(w, http.StatusOK, ResponseBody{
+		Message: message,
+		Code:    0,
+		Data:    result,
+	})
+}
+
 func (h *AttendTempHandler) GetAttendTempBatchImages(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	batchID := p.ByName("batchID")
 
@@ -62,7 +89,7 @@ func (h *AttendTempHandler) GetAttendTempBatchImages(w http.ResponseWriter, r *h
 	t := fmt.Sprintf("%s-%s-%s", day, month, year)
 
 	hostPath := fmt.Sprintf(`:%s/batch/%s/%v/%s/all`, h.ImagePort, batchID, group, t)
-	folderPath := fmt.Sprintf(fmt.Sprintf("%s/all", utilities.ImageBatchFolderPath), h.RootFolder, batchID, g, t)
+	folderPath := fmt.Sprintf(utilities.ImageBatchFolderPathAll, h.RootFolder, batchID, g, t)
 
 	var filePaths []string
 
@@ -100,8 +127,9 @@ func (h *AttendTempHandler) GetAttendTempFaceImages(w http.ResponseWriter, r *ht
 		return
 	}
 
+	folderPath := fmt.Sprintf(utilities.ImageBatchFolderPathFace, h.RootFolder, batchID, g, t)
 	hostPath := fmt.Sprintf(`:%s/batch/%s/%v/%s/face`, h.ImagePort, batchID, group, t)
-	folderPath := fmt.Sprintf(fmt.Sprintf("%s/face", utilities.ImageBatchFolderPath), h.RootFolder, batchID, g, t)
+
 	var filePaths []string
 
 	files, err := ioutil.ReadDir(folderPath)
@@ -124,7 +152,7 @@ func (h *AttendTempHandler) GetAttendTempFaceImages(w http.ResponseWriter, r *ht
 	return
 }
 
-func (h *AttendTempHandler) GetAttendTempFaceUnknown(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+func (h *AttendTempHandler) GetAttendTempFaceImagesUnknown(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	batchID := p.ByName("batchID")
 
 	year, _ := GetQuery(r, "year")
@@ -140,8 +168,9 @@ func (h *AttendTempHandler) GetAttendTempFaceUnknown(w http.ResponseWriter, r *h
 		return
 	}
 
+	folderPath := fmt.Sprintf(utilities.ImageBatchFolderPathFace, h.RootFolder, batchID, g, t)
 	hostPath := fmt.Sprintf(`:%s/batch/%s/%v/%s/face`, h.ImagePort, batchID, group, t)
-	folderPath := fmt.Sprintf(fmt.Sprintf("%s/face", utilities.ImageBatchFolderPath), h.RootFolder, batchID, g, t)
+
 	var filePaths []string
 
 	files, err := ioutil.ReadDir(folderPath)
@@ -151,7 +180,7 @@ func (h *AttendTempHandler) GetAttendTempFaceUnknown(w http.ResponseWriter, r *h
 	}
 
 	for _, f := range files {
-		if strings.Contains(f.Name(), fmt.Sprintf(`face_%s_`, "-1")) {
+		if strings.Contains(f.Name(), fmt.Sprintf(`face_-1_`)) {
 			filePaths = append(filePaths, fmt.Sprintf(`%s/%s`, hostPath, f.Name()))
 		}
 	}
