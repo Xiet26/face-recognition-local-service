@@ -87,3 +87,43 @@ func (h *FaceHandler) Get(w http.ResponseWriter, r *http.Request, p httprouter.P
 
 	return
 }
+
+func (h *FaceHandler) GetByFaceIDs(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	type Body struct {
+		FaceIDs []int `json:"faceIDs"`
+	}
+	var req = new(Body)
+	if err := BindJSON(r, req); err != nil {
+		ResponseError(w, r, err)
+		return
+	}
+
+	type ResponseData struct {
+		FaceID int32  `json:"faceID"`
+		URL    string `json:"url"`
+	}
+	var result = make([]ResponseData, 0)
+
+	for _, faceID := range req.FaceIDs {
+		hostPath := fmt.Sprintf(`:%s/person/%d`, h.ImagePort, faceID)
+		folderPath := fmt.Sprintf(utilities.ImagePersonFolderPath, h.RootFolder, faceID)
+
+		files, err := ioutil.ReadDir(folderPath)
+		if err != nil || len(files) < 1 {
+			continue
+		}
+
+		result = append(result, ResponseData{
+			FaceID: int32(faceID),
+			URL:    fmt.Sprintf(`%s/%s`, hostPath, files[0].Name()),
+		})
+	}
+
+	WriteJSON(w, http.StatusOK, ResponseBody{
+		Message: "get face images",
+		Code:    0,
+		Data:    result,
+	})
+
+	return
+}

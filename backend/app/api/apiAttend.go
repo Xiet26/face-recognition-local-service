@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 	"xiet26/face-recognition-local-service/backend/database"
 	"xiet26/face-recognition-local-service/backend/service"
 	"xiet26/face-recognition-local-service/utilities"
@@ -211,3 +212,58 @@ func (h *AttendTempHandler) GetAttendTempFaceImagesUnknown(w http.ResponseWriter
 //
 //	WriteJSON(w, http.StatusOK, ResponseBody{Message: "Successful"})
 //}
+
+func (h *AttendTempHandler) GetAndroidAttendTempBatchImages(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	batchID := p.ByName("batchID")
+
+	//group, _ := GetQuery(r, "group")
+	//
+	//g, err := strconv.Atoi(group)
+	//if err != nil {
+	//	ResponseError(w, r, err)
+	//	return
+	//}
+
+	group := "3"
+	g := 3
+
+	t := time.Now().Format("02-01-2006")
+
+	hostPath := fmt.Sprintf(`:%s/batch/%s/%v/%s/face`, h.ImagePort, batchID, group, t)
+	folderPath := fmt.Sprintf(utilities.ImageBatchFolderPathFace, h.RootFolder, batchID, g, t)
+
+	type ResponseData struct {
+		FaceID int32  `json:"faceID"`
+		URL    string `json:"url"`
+	}
+	var result = make([]ResponseData, 0)
+
+	files, err := ioutil.ReadDir(folderPath)
+	if err != nil {
+		ResponseError(w, r, err)
+		return
+	}
+
+	for _, f := range files {
+		label := strings.Split(f.Name(), "_")
+		if len(label) < 4 {
+			continue
+		}
+
+		faceID, err := strconv.Atoi(label[2])
+		if err != nil {
+			continue
+		}
+
+		result = append(result, ResponseData{
+			FaceID: int32(faceID),
+			URL:    fmt.Sprintf(`%s/%s`, hostPath, f.Name()),
+		})
+	}
+
+	WriteJSON(w, http.StatusOK, ResponseBody{
+		Message: "get batch images",
+		Code:    0,
+		Data:    result,
+	})
+}

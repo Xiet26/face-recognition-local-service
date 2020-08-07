@@ -253,26 +253,29 @@ func (h *AddAttendTempHandler) predict(rec *face.Recognizer, vector [128]float32
 func cropFaceFromImage(src string, dst string, rectangle image.Rectangle) {
 	mat := gocv.IMRead(src, gocv.IMReadUnchanged)
 
-	//rectangle.Min.X -= 10
-	//rectangle.Min.Y -= 10
-	//rectangle.Max.X += 10
-	//rectangle.Max.Y += 10
-	//
-	//if rectangle.Min.X < 0 {
-	//	rectangle.Min.X = 0
-	//}
-	//
-	//if rectangle.Min.Y < 0 {
-	//	rectangle.Min.Y = 0
-	//}
-	//
-	//if rectangle.Max.X > mat.Cols() {
-	//	rectangle.Max.X = mat.Cols()
-	//}
-	//
-	//if rectangle.Max.Y > mat.Rows() {
-	//	rectangle.Max.Y = mat.Rows()
-	//}
+	rateX := float64(rectangle.Dx())/float64(mat.Cols())
+	rateY := float64(rectangle.Dy())/float64(mat.Rows())
+
+	rectangle.Min.X -= int(200*rateX)
+	rectangle.Min.Y -= int(200*rateY)
+	rectangle.Max.X += int(150*rateX)
+	rectangle.Max.Y += int(150*rateX)
+
+	if rectangle.Min.X < 0 {
+		rectangle.Min.X = 0
+	}
+
+	if rectangle.Min.Y < 0 {
+		rectangle.Min.Y = 0
+	}
+
+	if rectangle.Max.X > mat.Cols() {
+		rectangle.Max.X = mat.Cols()
+	}
+
+	if rectangle.Max.Y > mat.Rows() {
+		rectangle.Max.Y = mat.Rows()
+	}
 
 	mat = mat.Region(rectangle)
 	gocv.IMWrite(dst, mat)

@@ -58,6 +58,7 @@ func faceRouters(parent *api.Router) {
 	router := parent.Group("/face")
 	router.POST("/", handler.AddFace)
 	router.GET("/:faceID", handler.Get)
+	router.POST("/faceIDs", handler.GetByFaceIDs)
 }
 
 func cameraRouters(parent *api.Router) {
@@ -82,4 +83,5 @@ func androidAttendRouters(parent *api.Router) {
 
 	router := parent.Group("/android/attend-temp")
 	router.POST("/", handler.AddAndroidAttendTemp)
+	router.GET("/:batchID/batch", handler.GetAndroidAttendTempBatchImages)
 }
