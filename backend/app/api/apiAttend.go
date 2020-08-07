@@ -216,16 +216,13 @@ func (h *AttendTempHandler) GetAttendTempFaceImagesUnknown(w http.ResponseWriter
 func (h *AttendTempHandler) GetAndroidAttendTempBatchImages(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	batchID := p.ByName("batchID")
 
-	//group, _ := GetQuery(r, "group")
-	//
-	//g, err := strconv.Atoi(group)
-	//if err != nil {
-	//	ResponseError(w, r, err)
-	//	return
-	//}
+	group, _ := GetQuery(r, "group")
 
-	group := "3"
-	g := 3
+	g, err := strconv.Atoi(group)
+	if err != nil {
+		ResponseError(w, r, err)
+		return
+	}
 
 	t := time.Now().Format("02-01-2006")
 
