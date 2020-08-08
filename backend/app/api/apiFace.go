@@ -61,6 +61,48 @@ func (h *FaceHandler) AddFace(w http.ResponseWriter, r *http.Request, p httprout
 	WriteJSON(w, http.StatusOK, ResponseBody{Message: "Attended"})
 }
 
+func (h *FaceHandler) AndroidAddFace(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	err := r.ParseMultipartForm(32 << 20)
+	if err != nil {
+		ResponseError(w, r, err)
+		return
+	}
+
+	f, _, err := r.FormFile(utilities.FileFieldFaceImage)
+	if err != nil {
+		ResponseError(w, r, err)
+		return
+	}
+	defer f.Close()
+
+	image, err := ioutil.ReadAll(f)
+	if err != nil {
+		ResponseError(w, r, err)
+		return
+	}
+
+	faceID := p.ByName("faceID")
+	id, err := strconv.Atoi(faceID)
+	if err != nil {
+		ResponseError(w, r, err)
+		return
+	}
+
+	cmd := new(service.AddFace)
+	cmd.FaceID = int32(id)
+	handler := &service.AddFaceHandler{
+		FaceRepository: h.FaceRepository,
+		RootFolder:     h.RootFolder,
+	}
+
+	if err := handler.Handle(cmd, image); err != nil {
+		ResponseError(w, r, err)
+		return
+	}
+
+	WriteJSON(w, http.StatusOK, ResponseBody{Message: "added face"})
+}
+
 func (h *FaceHandler) Get(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	faceID := p.ByName("faceID")
 

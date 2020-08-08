@@ -59,6 +59,7 @@ func faceRouters(parent *api.Router) {
 	router.POST("/", handler.AddFace)
 	router.GET("/:faceID", handler.Get)
 	router.POST("/faceIDs", handler.GetByFaceIDs)
+	router.POST("/android/add/:faceID", handler.AndroidAddFace)
 }
 
 func cameraRouters(parent *api.Router) {
