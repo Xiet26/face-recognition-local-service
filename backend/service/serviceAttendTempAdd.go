@@ -45,11 +45,10 @@ func (h *AddAttendTempHandler) Handle(data *AddAttendTemp) (model.ResultAttend, 
 	}
 
 	timeNow := time.Now()
-	fmt.Println(timeNow.Unix())
+	fmt.Println(data)
 
 	t := timeNow.Format(utilities.BIRTH_FORMAT_ATTEND)
 	folderPath := fmt.Sprintf(utilities.ImageBatchFolderPath, h.RootFolder, data.BatchID, data.Group, t)
-
 	err := os.MkdirAll(fmt.Sprintf(`%s/all`, folderPath), os.ModePerm)
 	if err != nil {
 		return result, err, errMsg
@@ -193,9 +192,12 @@ func (h *AddAttendTempHandler) AndroidHandle(data *AddAttendTemp) (model.ResultA
 
 func (h *AddAttendTempHandler) PredictImage(rec *face.Recognizer, imagePath string, batchID string, path string, t int64) ([]string, []int, error) {
 	defer os.RemoveAll(imagePath)
+	folderAllPath := fmt.Sprintf(`%s/all`, path)
 
 	faces, err := rec.RecognizeFile(imagePath)
 	if err != nil || faces == nil {
+		imageAll := fmt.Sprintf(utilities.ImageBatchAllPath, folderAllPath, t)
+		drawLineInImage(imagePath, imageAll, image.Rectangle{})
 		return nil, nil, fmt.Errorf("can't reconize image")
 	}
 
@@ -205,7 +207,6 @@ func (h *AddAttendTempHandler) PredictImage(rec *face.Recognizer, imagePath stri
 		return nil, nil, err
 	}
 
-	folderAllPath := fmt.Sprintf(`%s/all`, path)
 	err = os.MkdirAll(folderAllPath, os.ModePerm)
 	if err != nil {
 		return nil, nil, err
@@ -285,7 +286,7 @@ func drawLineInImage(src string, dst string, rectangle image.Rectangle) {
 	mat := gocv.IMRead(src, gocv.IMReadUnchanged)
 	cloneMat := mat.Clone()
 
-	gocv.Rectangle(&cloneMat, rectangle, color.RGBA{G: 255}, 2) // color: green
+	gocv.Rectangle(&cloneMat, rectangle, color.RGBA{R: 255}, 1) // color: green
 
 	gocv.IMWrite(dst, cloneMat)
 
