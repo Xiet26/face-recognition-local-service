@@ -1,8 +1,15 @@
 package api
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/disintegration/imaging"
 	"github.com/julienschmidt/httprouter"
+	"github.com/rwcarlsen/goexif/exif"
+	"image/color"
+	"image/jpeg"
+	_ "image/jpeg"
+	_ "image/png"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -75,11 +82,50 @@ func (h *FaceHandler) AndroidAddFace(w http.ResponseWriter, r *http.Request, p h
 	}
 	defer f.Close()
 
-	image, err := ioutil.ReadAll(f)
+	tmpImageByte, err := ioutil.ReadAll(f)
 	if err != nil {
 		ResponseError(w, r, err)
 		return
 	}
+
+	var tmpReader01 = bytes.NewReader(tmpImageByte)
+	var tmpReader02 = bytes.NewReader(tmpImageByte)
+
+	tmpImage, err := jpeg.Decode(tmpReader01)
+	if err != nil {
+		ResponseError(w, r, err)
+		return
+	}
+
+	x, err := exif.Decode(tmpReader02)
+	if err != nil {
+		ResponseError(w, r, err)
+		return
+	}
+
+	var rotation float64 = 0
+	orientationRaw, err := x.Get("Orientation")
+	if err == nil {
+		orientation := orientationRaw.String()
+		if orientation == "3" {
+			rotation = 180
+		} else if orientation == "6" {
+			rotation = 270
+		} else if orientation == "8" {
+			rotation = 90
+		}
+	}
+
+	img := imaging.Rotate(tmpImage, rotation, color.Gray{})
+
+	var buf = new(bytes.Buffer)
+	err = jpeg.Encode(buf, img, nil)
+	if err != nil {
+		ResponseError(w, r, err)
+		return
+	}
+
+	image := buf.Bytes()
 
 	faceID := p.ByName("faceID")
 	id, err := strconv.Atoi(faceID)
