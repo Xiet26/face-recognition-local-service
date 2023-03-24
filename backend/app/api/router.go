@@ -125,3 +125,16 @@ func (r *Router) File(path, name string) {
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.router.ServeHTTP(w, req)
 }
+
+func (r *Router) ServeFiles(path string, root http.FileSystem) {
+	if len(path) < 10 || path[len(path)-10:] != "/*filepath" {
+		panic("path must end with /*filepath in path '" + path + "'")
+	}
+
+	fileServer := http.FileServer(root)
+
+	r.router.GET(path, func(w http.ResponseWriter, req *http.Request, ps httprouter.Params) {
+		req.URL.Path = ps.ByName("filepath")
+		fileServer.ServeHTTP(w, req)
+	})
+}

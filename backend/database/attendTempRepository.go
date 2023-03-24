@@ -1,6 +1,6 @@
 package database
 
-import "xiet26/goface/face-management/model"
+import "xiet26/face-recognition-local-service/backend/model"
 
 type AttendTempMongoRepository interface {
 	Create(temp model.AttendTemp) error

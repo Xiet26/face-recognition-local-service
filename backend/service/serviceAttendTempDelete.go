@@ -3,7 +3,7 @@ package service
 import (
 	"fmt"
 	"github.com/asaskevich/govalidator"
-	"xiet26/Smart_Attendance_System/face-management/database"
+	"xiet26/face-recognition-local-service/backend/database"
 )
 
 type DeleteAttendTemp struct {
